@@ -1,21 +1,3 @@
-/**
- * Java text based rpg.
- *
- * @author DuckDookie
- * @version Alpha 1.0
- * future stuff:
- * money
- * inn/town
- * bosses
- * enemy descriptions
- * shops and items
- * game classes (rpg)   
- * saving system that can ask for levels and change starting accordingly
- * FEEDBACK TAKEAWAYS:
- * make classes (can be improved but has been implemented)
- * spacing between outputs 
- * mana for bosses, special ai, special attacks, etc 
- */
 //stuff i need to make code work, these are packages not included with base java so you need to import them
 import java.util.Scanner;
 import java.util.Random;
