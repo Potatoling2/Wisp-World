@@ -1,0 +1,590 @@
+/**
+ * Java text based rpg.
+ *
+ * @author DuckDookie
+ * @version Alpha 1.0
+ * future stuff:
+ * money
+ * inn/town
+ * bosses
+ * enemy descriptions
+ * shops and items
+ * game classes (rpg)   
+ * saving system that can ask for levels and change starting accordingly
+ * FEEDBACK TAKEAWAYS:
+ * make classes (can be improved but has been implemented)
+ * spacing between outputs 
+ * mana for bosses, special ai, special attacks, etc 
+ */
+//stuff i need to make code work, these are packages not included with base java so you need to import them
+import java.util.Scanner;
+import java.util.Random;
+import java.lang.Math;
+public class Game {
+    //integer setup, these values are actually to reset them so atk, def, etc can't stack and make game break
+    static int playerhp;
+    static int playeratk;
+    static int playerdef;
+    static int playermp;
+    static int enemyatk;
+    static int turncount = 0;
+    //keeps track of game stuff, these are the base values for skills and their mana costs
+    static String[] skills = {"Power Slash", "Heal", "Blade of Fury"};
+    static int[] costs = {5, 3, 15};
+    //used for when you pick where you want to go to fight enemies
+    static int playerloc = 0;
+    static int money = 0;
+    //flags to reduce bugs
+    static boolean isdedge = false;
+    static boolean nobattle = false;
+    static boolean perfguard = false;
+    static boolean aggromsg = false;
+    static boolean hit = false;
+    static boolean inn = false;
+    //random function so i dont need to type this 400 times
+    public static int Rand(int min, int max){
+        return (int)(Math.random() * (max - min + 1)) + min;
+    }
+    //exp method
+    public static void Exp(int playerexp, int enemyexp, int expreq, int level) {
+        Player.exp = Player.exp + Enemy.exp;
+        System.out.println(Player.name + " gained " + Enemy.exp + " exp!");
+        if(Player.exp >= Player.expreq) {
+            Player.level++;
+            System.out.println("Level Up!");
+            System.out.println("");
+            System.out.println(Player.name + " is now Level " + Player.level + "!");
+            Player.exp = Player.exp - Player.expreq;
+            //exp formula
+            double expround = Math.pow(1.15,Player.level - 1) * 100;
+            Player.expreq = (int)Math.round(expround);
+            StatGains();
+        }
+        System.out.println("Exp is: " + Player.exp + "/" + Player.expreq);
+        System.out.println("");
+    }
+    //statgains method
+    public static void StatGains() {
+        int hpgain = 6;
+        int atkgain = 2;
+        int defgain = 1;
+        int mpgain = 2;
+        System.out.println("");
+        Player.hp = playerhp;
+        Player.hp = Player.hp + hpgain;
+        playerhp = Player.hp;
+        System.out.println("HP increased by " + hpgain + "!");
+        Player.atk = Player.atk + atkgain;
+        System.out.println("Atk increased by " + atkgain + "!");
+        if(Player.level % 3 == 0) {
+            Player.def = Player.def + defgain;
+            System.out.println("Def increased by " + defgain + "!");
+        }
+        playermp = Player.mp;
+        Player.mp = Player.mp + mpgain;
+        playermp = Player.mp;
+        System.out.println("MP increased by " + mpgain + "!");
+    }
+    //big baller shotcaller method
+    public static int Money(int enemymoney, int money) {
+        money = money + enemymoney;
+        if(enemymoney > 0) {
+            System.out.println("Gained " + enemymoney + " coins.");
+            System.out.println("");
+        }
+        else if(enemymoney < 0 && inn) {
+            enemymoney = enemymoney * -1;
+            System.out.println("Paid " + enemymoney + " coins.");
+        }
+        else if(enemymoney < 0 && !inn) {
+            enemymoney = enemymoney * -1;
+            System.out.println("Lost " + enemymoney + " coins.");
+        }
+        return(money);
+    }
+    //battle method, where the fighting takes place, gets called with whatever the enemy and player stats are at the current time
+    public static void Battle() {
+        //scanner to allow for user input
+        Scanner Actions = new Scanner(System.in);
+        //resetting values to their defaults, once again to prevent stacking
+        System.out.println("");
+        System.out.println(Player.name + "'s HP is " + Player.hp + ". " + Enemy.name + "'s HP is " + Enemy.hp + ".");
+        //loops battle sequence until enemy or player runs out of hp
+        while(Player.hp > 0 && Enemy.hp > 0) {
+            System.out.println("Press 1 for attack, 2 for guard, 3 for skills.");
+            System.out.println("Press enter after inputting a NUMBER (NOT ANYTHING ELSE) to proceed.");
+            turncount++;
+            Player.def = playerdef;
+            Enemy.atk = enemyatk;
+            int aggrothresh = Enemy.hp/4;
+            //restores mana every turn
+            if(Player.mp < playermp) {
+                Player.mp = Player.mp + Player.mpregen;
+            }
+            //makes it so mana can't overflow
+            if(Player.mp > playermp) {
+                Player.mp = playermp;
+            }
+            //asks for user's input so they can choose their action
+            int input = Actions.nextInt();
+            if(input == 1) {
+                //player attack, enemyhp is set equal to that value
+                Enemy.hp = attack(Player.hp, Enemy.hp, Player.atk, Enemy.def, Player.mp, Player.acc, Player.name, Enemy.name);
+                //if you win it breaks the loop so enemy won't attack when it's already dead
+                if(Enemy.hp <= 0) {
+                    System.out.println("You Won!");
+                    Exp(Player.exp, Enemy.exp, Player.expreq, Player.level);
+                    money = Money(Enemy.money, money);
+                    break;
+                }
+            }
+            //guard method, increases defense
+            else if(input == 2) {
+                Player.def = guard(Player.def);
+            }
+            //skills menu
+            else if(input == 3) {
+                System.out.println("");
+                System.out.println("Select a skill.");
+                System.out.println("Press 1 for " + skills[0] + ", 2 for " + skills[1] + ", 3 for " + skills[2] + ", etc.");
+                System.out.println("Mana Costs are: "); 
+                //prints costs of all skills using for loop
+                for(int i = 0; i < skills.length; i++) {
+                    System.out.println((i + 1) + ": " + costs[i]);
+                }
+                //takes input on which skill to use
+                int skillinput = Actions.nextInt();
+                //if not enough mana will print this without using skill
+                if(skillinput == 1 && Player.mp < costs[0]) {
+                    System.out.println("Not enough mana.");
+                    System.out.println("");
+                }
+                else if(skillinput == 1 && Player.mp >= costs[0]) {
+                    //modifies attack for that action only
+                    Player.atk = Player.atk + Player.atk/2;
+                    Player.mp = Player.mp - costs[0];
+                    Enemy.hp = attack(Player.hp, Enemy.hp, Player.atk, Enemy.def, Player.mp, Player.acc, Player.name, Enemy.name);
+                    Player.atk = playeratk;
+                    if(Enemy.hp <= 0) {
+                        System.out.println("You Won!");
+                        Exp(Player.exp, Enemy.exp, Player.expreq, Player.level);
+                        money = Money(Enemy.money, money);
+                        break;
+                    }
+                }
+                else if(skillinput == 2 && Player.mp < costs[1]) {
+                    System.out.println("Not enough mana.");
+                    System.out.println("");
+                }
+                else if(skillinput == 2 && Player.mp >= costs[1]) {
+                    //heals % of max hp
+                    int healamt = Player.hp/5;
+                    Player.hp = Player.hp + healamt;
+                    if(Player.hp > playerhp) {
+                        Player.hp = playerhp;
+                    }
+                    Player.mp = Player.mp - costs[1];
+                }
+                else if(skillinput == 3 && Player.mp < costs[2]) {
+                    System.out.println("Not enough mana.");
+                    System.out.println("");
+                }
+                else if(skillinput == 3 && Player.mp >= costs[2]) {
+                    //essentially an ultimate
+                    Player.atk = Player.atk * 2;
+                    Player.mp = Player.mp - costs[2];
+                    Enemy.hp = attack(Player.hp, Enemy.hp, Player.atk, Enemy.def, Player.mp, Player.acc, Player.name, Enemy.name);
+                    Player.atk = playeratk;
+                    if(Enemy.hp <= 0) {
+                        System.out.println("You won!");
+                        Exp(Player.exp, Enemy.exp, Player.expreq, Player.level);
+                        money = Money(Enemy.money, money);
+                        break;
+                    }
+                }
+                else {
+                    //error case if user puts in a bad input
+                    System.out.println("Invalid action.");
+                    System.out.println("");
+                }
+            }
+            else if(input == 4) {
+                System.out.println("dev info:");
+                System.out.println("Turncount is " + turncount + ".");
+                System.out.println("Player mp is " + Player.mp + ".");
+                System.out.println("OgPlayermp is " + playermp + ".");
+                System.out.println("Mpregen is " + Player.mpregen + ".");
+                System.out.println("OgPlayerhp is " + Player.hp + ".");
+                System.out.println("Playerhp is " + playerhp + ".");
+                System.out.println("OgPlayeratk is " + Player.atk + ".");
+                System.out.println("Playeratk is " + playeratk + ".");
+                System.out.println("OgPlayerdef is " + Player.def + ".");
+                System.out.println("Playerdef is " + playerdef + ".");
+                System.out.println("OgEnemyatk is " + Enemy.atk + ".");
+                System.out.println("Enemyatk is " + enemyatk + ".");
+                System.out.println("");
+            }
+            else {
+                //another error case
+                System.out.println("Invalid action.");
+                System.out.println("");
+            }
+            if(Enemy.hp > aggrothresh) {
+                //standard enemy attack if they're above the threshhold to go into berserk mode
+                Player.hp = enemyattack(Player.hp, Enemy.hp, Enemy.atk, Player.def, Player.mp, Enemy.acc, Player.name, Enemy.name);
+                if(Player.hp <= 0) {
+                    //if enemy kills player
+                    System.out.println(Player.name + " was slain. Restart to continue.");
+                    isdedge = true;
+                    break;
+                }
+            }
+            else {
+                if(Enemy.aggro == 0) {
+                    //when it gets to this part, the atk will be multiplied by 2 for the turn, but will reset after
+                    Enemy.atk = Enemy.atk * 2;
+                }
+                if(!aggromsg && Enemy.aggro == 0) {
+                    //will only display the message once
+                    System.out.println(Enemy.name + " is growing desperate. Attacks are now far more severe!");
+                    System.out.println("");
+                    aggromsg = true;
+                }
+                //for if below aggrothreshhold but i don't want enemy to aggro
+                Player.hp = enemyattack(Player.hp, Enemy.hp, Enemy.atk, Player.def, Player.mp, Enemy.acc, Player.name, Enemy.name);
+                if(Player.hp <= 0) {
+                    System.out.println(Player.name + " was slain. Restart to continue.");
+                    isdedge = true;
+                    break;
+                }
+            }
+        }
+    }
+    public static int attack(int a, int b, int c, int d, int e, int f, String g, String h) {
+        //this is where player attacks with damage calculator so it saves some time
+        int playerdmg = dmgcalc(c, d, f);
+        b = b - playerdmg;
+        //prevents negative hp from appearing
+        if(b < 0) {
+            b = 0;
+        }
+        System.out.println("");
+        System.out.println(Enemy.name + " took " + playerdmg + " damage!");
+        //flag for message
+        if(!hit) {
+            System.out.println(Player.name + " Missed!");
+            System.out.println("");
+        }
+        System.out.println("");
+        System.out.println(g + "'s HP is " + a + ". " + h + "'s HP is " + b + ".");
+        System.out.println("MP is now " + e + ".");
+        return b;
+    }
+    public static int guard(int a) {
+        //calls random method and generates defense between 0 and 5
+        int def = Rand(0,5);
+        if(def == 5) {
+            //if defense rolled to be 5, perfect guard will nullify damage for the turn
+            def = 999;
+            System.out.println("Perfect Guard! Damage will be fully nullified this turn!");
+            perfguard = true;
+        }
+        else {
+            perfguard = false;
+        }
+        //adds that value to base defense to determine total defense
+        a = a + def;
+        if(def <= 5) {
+            System.out.println("Defense up!");
+        }
+        return a;
+    }
+    public static int enemyattack(int a, int b, int c, int d, int e, int f, String g, String h) {
+        //same as player attack method but for enemies
+        int enemydmg = dmgcalc(c, d, f);
+        a = a - enemydmg;
+        if(a < 0) {
+            a = 0;
+        }
+        System.out.println("");
+        System.out.println(Player.name + " took " + enemydmg + " damage!");
+        //flag for message
+        if(!hit && !perfguard) {
+            System.out.println(Enemy.name + " Missed!");
+            System.out.println("");
+        }
+        System.out.println("");
+        System.out.println(g + "'s HP is " + a + ". " + h + "'s HP is " + b + ".");
+        System.out.println("MP is now " + e + ".");
+        return a;
+    }
+    public static int dmgcalc(int a, int b, int c) {
+        //damage calculator to add randomness to attack value
+        int dmgmin = -1 * a/5;
+        int dmgmax = a/5;
+        int dmgroll = Rand(dmgmin,dmgmax);
+        a = a + dmgroll;
+        //accuracy check
+        int hitcheck = Rand(0,99);
+        if(hitcheck >= c) {
+            a = 0;
+            hit = false;
+        }
+        else {
+            hit = true;
+        }
+        //damage takes defense into account
+        int dmg = a - b;
+        //prevents negative damage
+        if(dmg < 0) {
+            dmg = 0;
+        }
+        return dmg;
+    }
+    public static void Navigation(String a) {
+        //method for determining what enemy will spawn based on player choice
+        int enemymin = 0;
+        int enemymax = 99;
+        int enemyrand = Rand(0,99);
+        nobattle = false;
+        if(a.contains("Plains")) {
+            if(playerloc == 0){
+                System.out.println("You choose to stay in the Vernier plains to keep fighting.");
+                System.out.println("");
+            }
+            else {
+                //updates player position and gives info
+                playerloc = 0;
+                System.out.println("This is the Vernier Plains. A large area perfect for new champions to begin their journeys.");
+                System.out.println("Danger Level: 1");
+                System.out.println("");
+            }
+            //generates a random enemy to fight, updates attributes of enemy for battle
+            if(enemyrand >= 0 && enemyrand < 33) {
+                Enemy Slime = new Enemy();
+                Slime.Attributes(30, 5, 0, 79, 1, 20, 15, "Slime");
+                System.out.println("A small slime blocks the path!");
+            }
+            else if(enemyrand >= 33 && enemyrand < 67) {
+                Enemy Rat = new Enemy();
+                Rat.Attributes(40, 3, 1, 79, 0, 20, 20, "Large Rat");
+                System.out.println("A large rat bares it's teeth at you.");
+            }
+            else if(enemyrand >= 67 && enemyrand < 100) {
+                Enemy Goblin = new Enemy();
+                Goblin.Attributes(25, 8, 0, 84, 1, 25, 25, "Goblin");
+                System.out.println("A goblin approaches menacingly!");
+            }
+        }
+        else if(a.contains("Forest")) {
+            //same stuff different enemies
+            if(playerloc == 1){
+                System.out.println("You choose to stay in the Whisperwoods to keep fighting.");
+                System.out.println("");
+            }
+            else {
+                playerloc = 1;
+                System.out.println("This is the Whisperwoods. A dark forest that's sure to be infested with insects and creatures.");
+                System.out.println("Danger Level: 3");
+                System.out.println("");
+            }
+            if(enemyrand >= 0 && enemyrand < 50) {
+                Enemy Spider = new Enemy();
+                Spider.Attributes(35, 10, 0, 89, 1, 40, 20, "Spider");
+                System.out.println("A spider crawls from above!");
+            }
+            else if(enemyrand >= 50 && enemyrand < 70) {
+                Enemy Orc = new Enemy();
+                Orc.Attributes(50, 7, 2, 69, 0, 70, 40, "Orc");
+                System.out.println("You stumble across an orc in the woods. It's angry!");
+                System.out.println("It attacks you in rage!");
+            }
+            else if(enemyrand >= 70 && enemyrand < 100) {
+                Enemy Ent = new Enemy();
+                Ent.Attributes(45, 8, 1, 79, 1, 50, 25, "Ent");
+                System.out.println("You brush the branch of a tree...");
+                System.out.println("It's actually an ent!");
+            }
+        }
+        else if(a.contains("Desert")) {
+            //same stuff different enemies
+            if(playerloc == 2){
+                System.out.println("You choose to stay in the Shambhala Desert to keep fighting.");
+                System.out.println("");
+            }
+            else {
+                playerloc = 2;
+                System.out.println("This is the Shambhala Desert. An expansive wasteland full of monsters and bandits alike.");
+                System.out.println("Danger Level: 7");
+                System.out.println("");
+            }
+            if(enemyrand >= 0 && enemyrand < 35) {
+                Enemy Wyrm = new Enemy();
+                Wyrm.Attributes(80, 18, 1, 89, 0, 75, 50, "Sand Wyrm");
+                System.out.println("The wyrm attacks from below!");
+            }
+            else if(enemyrand >= 35 && enemyrand < 61) {
+                Enemy Snake = new Enemy();
+                Snake.Attributes(100, 14, 0, 79, 1, 80, 50, "Rattlesnake");
+                System.out.println("A snake crawls forth.");
+            }
+            else if(enemyrand >= 61 && enemyrand < 81) {
+                Enemy Bandit = new Enemy();
+                Bandit.Attributes(85, 16, 2, 94, 0, 80, 100, "Bandit");
+                System.out.println("A bandit runs by to take your money!");
+                money = Money(-1 * Enemy.money, money);
+                System.out.println("The bandit pulls out a knife to take the rest!");
+            }
+            else if(enemyrand >= 81 && enemyrand < 100) {
+                Enemy Cacturne = new Enemy();
+                Cacturne.Attributes(120, 10, 3, 84, 1, 100, 40, "Cacturne");
+                System.out.println("The cactus you were looking at opens it eyes!");
+            }
+        }
+        else if(a.contains("Castle")) {
+            //same stuff different enemies
+            if(playerloc == 3){
+                System.out.println("You choose to stay in the Blackthorn Castle to keep fighting.");
+                System.out.println("");
+            }
+            else {
+                playerloc = 3   ;
+                System.out.println("This is the Blackthorn Castle. Home of the Knight-King Darius. His legions of minions await you here.");
+                System.out.println("Danger Level: 10");
+                System.out.println("");
+            }
+            if(enemyrand >= 0 && enemyrand < 30) {
+                Enemy Legionnare = new Enemy();
+                Legionnare.Attributes(100, 20, 2, 84, 0, 100, 80, "Legionnare");
+                System.out.println("The legion sends forward one to duel.");
+            }
+            else if(enemyrand >= 30 && enemyrand < 60) {
+                Enemy Mage = new Enemy();
+                Mage.Attributes(90, 25, 0, 84, 1, 123, 75, "Castle Mage");
+                System.out.println("You have disturbed the mage's study.");
+                System.out.println("They move to unleash their fury upon you!");
+            }
+            else if(enemyrand >= 60 && enemyrand < 80) {
+                Enemy Archer = new Enemy();
+                Archer.Attributes(80, 30, 1, 94, 1, 110, 100, "Shadow Archer");
+                System.out.println("An arrow whizzes by your head from behind!");
+                System.out.println("The Archer takes aim!");
+            }
+            else if(enemyrand >= 80 && enemyrand < 100) {
+                Enemy KGuard = new Enemy();
+                KGuard.Attributes(125, 30, 3, 79, 0, 150, 150, "King's Guard");
+                System.out.println("The King has sent one of his personal warriors to take you down.");
+            }
+        }
+        else if(a.contains("Ocean")) {
+            System.out.println("It would be unwise to head for this area yet, Champion.");
+        }
+        else if(a.contains("Underworld")) {
+            System.out.println("It would be unwise to head for this area yet, Champion.");
+        }
+        else if(a.contains("etc.")) {
+            System.out.println("̶̬̱̰͠S̶̬̱̰͠p̴͇̔̅̃e̵̢̥̿c̴̩̳͊ì̴̡̨̟̠̀͛̎a̶͚̠̪̽͝l̸̙̦̈́́̚ ̴͌̈́͐̃͜C̵͔̤̏̇̈́ͅȧ̶̖͔̫̓͜s̷̝͒e̷̼͒̅̈́͘ ̴̼͝ͅĚ̴̪͎͕̐̚r̶͙̜͖͑ȓ̸̹̈́o̸̯̍̀͑̂r̸̢̥͈̣̊̒̿̀");
+        }
+        else if(a.contains("Stats")) {
+            //show stats method
+            System.out.println("");
+            System.out.println(Player.name + "'s Stats are:");
+            System.out.println("Level: " + Player.level);
+            System.out.println("HP: " + Player.hp + "/" + playerhp);
+            System.out.println("Atk: " + Player.atk);
+            System.out.println("Def: " + Player.def);
+            System.out.println("MP: " + Player.mp + "/" + playermp);
+            System.out.println("To next level: " + Player.exp + "/" + Player.expreq);
+            System.out.println("Coins: " + money);
+            nobattle = true;
+        }
+        else if(a.contains("Inn")) {
+            int innprice = Player.level * 10;
+            int trueinnprice = innprice * -1;
+            System.out.println("Welcome to the inn!");
+            System.out.println("Would you like to stay the night?");
+            System.out.println("It's " + innprice + " coins.");
+            System.out.println("Press 1 for yes, 2 for no.");
+            Scanner innscanner = new Scanner(System.in);
+            int pay = innscanner.nextInt();
+            if(pay == 1) {
+                inn = true;
+                Money(trueinnprice, money);
+                System.out.println("Thanks for your patronage!");
+                Player.hp = playerhp;
+                System.out.println("Your HP was maxed out.");
+                System.out.println("");
+            }
+            else {
+                System.out.println("Oh well, see you next time!");
+                System.out.println("");
+            }
+            nobattle = true;
+        }
+        else { 
+            //error case for nonvalid area name
+            System.out.println("Invalid Area Name, try again.");
+            System.out.println("");
+            nobattle = true;
+        }
+    }
+    public static void main(String args[]) {
+        Scanner Input = new Scanner(System.in);
+        //game starts here
+        System.out.println("Welcome to Wisp World. You are a wisp, a small spirit that can take control of lifeless husks called champions.");
+        System.out.println("Each champion has it's own unique set of skills, and usually have a 'class' denoting their powers.");
+        System.out.println("You are in the Vernier Plains. One of these champions, a warrior can be seen.");
+        System.out.println("You head over to inhabit the warrior as your own.");
+        System.out.println("What is the warrior's name?");
+        
+        String playername = Input.nextLine();
+        if(playername.equals("Schmekle")) {
+            System.out.println("S̶̬̱̰͠p̴͇̔̅̃e̵̢̥̿c̴̩̳͊ì̴̡̨̟̠̀͛̎a̶͚̠̪̽͝l̸̙̦̈́́̚ ̴͌̈́͐̃͜C̵͔̤̏̇̈́ͅȧ̶̖͔̫̓͜s̷̝͒e̷̼͒̅̈́͘ ̴̼͝ͅĚ̴̪͎͕̐̚r̶͙̜͖͑ȓ̸̹̈́o̸̯̍̀͑̂r̸̢̥͈̣̊̒̿̀");
+            System.out.println(costs[666]);
+        }
+        System.out.println("And it's host? (Your own name)");
+        String hostname = Input.nextLine();
+        if(hostname.equals("Schmekle")) {
+            System.out.println("S̶̬̱̰͠p̴͇̔̅̃e̵̢̥̿c̴̩̳͊ì̴̡̨̟̠̀͛̎a̶͚̠̪̽͝l̸̙̦̈́́̚ ̴͌̈́͐̃͜C̵͔̤̏̇̈́ͅȧ̶̖͔̫̓͜s̷̝͒e̷̼͒̅̈́͘ ̴̼͝ͅĚ̴̪͎͕̐̚r̶͙̜͖͑ȓ̸̹̈́o̸̯̍̀͑̂r̸̢̥͈̣̊̒̿̀");
+            System.out.println(costs[666]);
+        }
+        //generates player stats, will change for different classes later
+        Player.Stats(30, 10, 0, 20, 2, 94, 0, 100, 1, playername);
+        //generates first enemy, might turn into a tutorial type enemy later
+        Enemy Slime = new Enemy();
+        Slime.Attributes(20, 5, 0, 79, 1, 50, 10, "Baby Slime");
+        System.out.println("");
+        System.out.println("Wonderful. The legend of " + Player.name + " has begun.");
+        System.out.println("");
+        System.out.println("There is a small " + Enemy.name + " ahead.");
+        playerhp = Player.hp;
+        playeratk = Player.atk;
+        playerdef = Player.def;
+        playermp = Player.mp;
+        enemyatk = Enemy.atk;
+        //first battle
+        Battle();
+        //keeps asking if you would like to battle until game confirms you died
+        while(!isdedge) {
+            System.out.println("Where should " + Player.name + " head next?");
+            System.out.println("Input words of where you'd like to go.");
+            System.out.println("Example keywords: Plains, Desert, Castle, Forest, etc.");
+            System.out.println("If you would like to check stats, type 'Stats'.");
+            System.out.println("If you would like to use the inn to heal, type 'Inn'.");
+            System.out.println("If the tale of Champion " + Player.name + " is over, type 'Whisper'.");
+            String loc = Input.nextLine();
+            //ends game early so i dont have to die to test things
+            if(loc.contains("Whisper")) {
+                System.out.println("Thank you for playing!");
+                break;
+            }
+            //puts user input string through navigation method, if it matches to one of the cases, itll do that
+            Navigation(loc);
+            //makes it so that battles dont occur if they mess up input
+            if(!nobattle) {
+                turncount = 0;
+                Battle();
+            }
+        }
+    }
+}
