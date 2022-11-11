@@ -10,7 +10,16 @@ To run, add all 3 codes into separate files in your chosen Java IDE, using the c
  * bosses
  * enemy descriptions
  * shops and items
- * game classes (rpg)   
+ * game classes (rpg)
+ * battle 2.0
+ * - new stats, speed, evasion, e.atk, e.def
+ * - status afflictions
+ * - revamped turn order, rework battle method into player and enemy turn
+ * battle 3.0
+ * - multiple enemies on some encounters
+ * - party system
+ * battle 4.0
+ * - weakness triangle  
  * saving system that can ask for levels and change starting accordingly
  * gacha system
  * gui
