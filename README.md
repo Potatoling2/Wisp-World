@@ -1,8 +1,6 @@
 # Wisp-World
 To run, add all 3 codes into separate files in your chosen Java IDE, using the correct class names for each.
 
-This is Wisp World, my first RPG game based in java. This game uses text and is mostly a proof of concept for creating RPG games using java. The goal of this project is to develop basic game dev skills, as well as more advanced java skills, all while making something that can be used for other RPG projects. I eventually want this game to be the framework for creating other java RPGs, using the battle systems and other things that I made as a base.
-
 /**
  * Java text based rpg.
  *
