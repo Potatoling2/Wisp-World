@@ -32,10 +32,11 @@ public class Game {
     //keeps track of game stuff, these are the base values for skills and their mana costs
     static String[] skills = {"Power Slash", "Heal", "Blade of Fury"};
     static int[] costs = {5, 3, 15};
-    //used for when you pick where you want to go to fight enemies
+    //game variables
     static int playerloc = 0;
     static int money = 0;
     static int textspeed = 15;
+    static Scanner Input = new Scanner(System.in);
     //keeps track of player victories for each area
     static int[] bosscount = {0, 0, 0, 0, 0, 0, 0};
     static int[] staticbossreq = {10, 10, 20, 25, 100, 100, 100};
@@ -137,8 +138,6 @@ public class Game {
     }
     //battle method, where the fighting takes place, gets called with whatever the enemy and player stats are at the current time
     public static void Battle() {
-        //scanner to allow for user input
-        Scanner Actions = new Scanner(System.in);
         //resetting values to their defaults, once again to prevent stacking
         scroll("");
         scroll(Player.name + "'s HP is " + Player.hp + ". " + Enemy.name + "'s HP is " + Enemy.hp + ".");
@@ -161,7 +160,7 @@ public class Game {
                 Player.mp = playermp;
             }
             //asks for user's input so they can choose their action
-            int input = Actions.nextInt();
+            int input = Input.nextInt();
             if(input == 1) {
                 //player attack, enemyhp is set equal to that value
                 Enemy.hp = attack(Player.hp, Enemy.hp, Player.atk, Enemy.def, Player.mp, Player.acc, Player.name, Enemy.name);
@@ -193,7 +192,7 @@ public class Game {
                     scroll((i + 1) + ": " + costs[i]);
                 }
                 //takes input on which skill to use
-                int skillinput = Actions.nextInt();
+                int skillinput = Input.nextInt();
                 //will only work if enough mana
                 if(Player.mp > costs[skillinput - 1]) {
                     if(skillinput == 1) {
@@ -389,8 +388,6 @@ public class Game {
         return dmg;
     }
     public static void Navigation(String a) {
-        //boss scanner
-        Scanner bossflag = new Scanner(System.in); 
         //method for determining what enemy will spawn based on player choice
         int enemymin = 0;
         int enemymax = 99;
@@ -408,7 +405,7 @@ public class Game {
                 scroll("Danger Level: 1");
                 if(!danger[playerloc]) {
                     scroll("Do you want to continue? Press 1 for yes. Anything else for no.");
-                    int cont = bossflag.nextInt();
+                    int cont = Input.nextInt();
                     if(cont != 1) {
                         scroll("You decide to turn back.");
                         nobattle = true;
@@ -419,7 +416,7 @@ public class Game {
             }
             if(bosscount[playerloc] >= bossreq[playerloc] && !nobattle) {
                 scroll("A powerful foe lies ahead. Do you wish to challenge them? Press 1 for yes. Anything else for no.");
-                int confirmation = bossflag.nextInt();
+                int confirmation = Input.nextInt();
                 if(confirmation == 1) {
                     Enemy LesserDrake = new Enemy();
                     LesserDrake.Attributes(100, 20, 5, 79, 0, 250, 250, "Lesser Drake");
@@ -461,7 +458,7 @@ public class Game {
                 scroll("Danger Level: 3");
                 if(!danger[playerloc]) {
                     scroll("Do you want to continue? Press 1 for yes. Anything else for no.");
-                    int cont = bossflag.nextInt();
+                    int cont = Input.nextInt();
                     if(cont != 1) {
                         scroll("You decide to turn back.");
                         nobattle = true;
@@ -472,7 +469,7 @@ public class Game {
             }
             if(bosscount[playerloc] >= bossreq[playerloc] && !nobattle) {
                 scroll("A powerful foe lies ahead. Do you wish to challenge them? 1 for yes, 2 for no.");
-                int confirmation = bossflag.nextInt();
+                int confirmation = Input.nextInt();
                 if(confirmation == 1) {
                     Enemy OrcChief = new Enemy();
                     OrcChief.Attributes(500, 20, 8, 64, 0, 800, 1000, "Orc Chieftan");
@@ -516,7 +513,7 @@ public class Game {
                 scroll("Danger Level: 7");
                 if(!danger[playerloc]) {
                     scroll("Do you want to continue? Press 1 for yes. Anything else for no.");
-                    int cont = bossflag.nextInt();
+                    int cont = Input.nextInt();
                     if(cont != 1) {
                         scroll("You decide to turn back.");
                         nobattle = true;
@@ -527,7 +524,7 @@ public class Game {
             }
             if(bosscount[playerloc] >= bossreq[playerloc] && !nobattle) {
                 scroll("A powerful foe lies ahead. Do you wish to challenge them? Press 1 for yes. Anything else for no.");
-                int confirmation = bossflag.nextInt();
+                int confirmation = Input.nextInt();
                 if(confirmation == 1) {
                     Enemy Sphinx = new Enemy();
                     Sphinx.Attributes(777, 80, 8, 99, 0, 2500, 777, "The Sphinx");
@@ -576,7 +573,7 @@ public class Game {
                 scroll("Danger Level: 10");
                 if(!danger[playerloc]) {
                     scroll("Do you want to continue? Press 1 for yes. Anything else for no.");
-                    int cont = bossflag.nextInt();
+                    int cont = Input.nextInt();
                     if(cont != 1) {
                         scroll("You decide to turn back.");
                         nobattle = true;
@@ -587,7 +584,7 @@ public class Game {
             }
             if(bosscount[playerloc] >= bossreq[playerloc] && !nobattle) {
                 scroll("A powerful foe lies ahead. Do you wish to challenge them? Press 1 for yes. Anything else for no.");
-                int confirmation = bossflag.nextInt();
+                int confirmation = Input.nextInt();
                 if(confirmation == 1) {
                     Enemy theKing = new Enemy();
                     theKing.Attributes(1000, 150, 15, 89, 0, 50000, 10000, "King Darius");
@@ -657,8 +654,7 @@ public class Game {
             scroll("Would you like to stay the night?");
             scroll("It's " + innprice + " coins.");
             scroll("Press 1 for yes, 2 for no.");
-            Scanner innscanner = new Scanner(System.in);
-            int pay = innscanner.nextInt();
+            int pay = Input.nextInt();
             if(pay == 1) {
                 inn = true;
                 Money(trueinnprice, money);
@@ -681,7 +677,7 @@ public class Game {
         }
     }
     public static void main(String args[]) {
-        Scanner Input = new Scanner(System.in);
+        
         //game starts here
         scroll("Welcome to Wisp World. You are a wisp, a small spirit that can take control of lifeless husks called champions.");
         scroll("Each champion has it's own unique set of skills, and usually have a 'class' denoting their powers.");
