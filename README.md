@@ -23,6 +23,7 @@ To run, add all 3 codes into separate files in your chosen Java IDE, using the c
  * saving system that can ask for levels and change starting accordingly
  * gacha system
  * gui
+ * improved navigation system (grid system with 2d array, make 1 per location, random boss spawn?)
  * FEEDBACK TAKEAWAYS:
  * make classes (can be improved but has been implemented)
  * spacing between outputs 
